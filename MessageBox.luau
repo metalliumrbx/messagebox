@@ -9,7 +9,7 @@
 -- Open-source components of Metallium are avaliable at this web site:
 --		https://github.com/metalliumrbx
 
-local MessageBox = {}
+local MessageBoxManager = {}
 
 type MessageBoxButton = {
 	Label: string;
@@ -23,40 +23,58 @@ type MessageBox = {
 	
 	UI: ScreenGui; -- No need to assign this, it will be assigned at MessageBox.Show()
 	
-	Show: (toPlayer: player) -> nil;
+	Show: (toPlayer: Player) -> nil;
 	Hide: (nil) -> nil;
 }
 
-function MessageBox.Show(self, toPlayer: player)
-	local MessageBoxTitle = self.Title
-	local MessageBoxContent = self.Content
+function MessageBoxManager.New(): MessageBox
+	local NewMessageBox: MessageBox = {}
 	
-	local Buttons = self.Buttons
-	
-	local MessageBoxUI = script.MessageBoxUI:Clone()
-	
-	-- Property changes
-	local Box = MessageBoxUI.Screen.Box
-	
-	Box.Title.TitleText.Text = MessageBoxTitle
-	Box.Content.Text = MessageBoxContent
-	
-	-- Render buttons
-	for button: MessageBoxButton in pairs(Buttons) do
-		local AssignedButton = script.Button:Clone()
-		AssignedButton.Text = button.Label
-		AssignedButton.MouseButton1Click = button.Callback;
+	function NewMessageBox:Show(toPlayer: Player): nil
+		local MessageBoxTitle = NewMessageBox.Title
+		local MessageBoxContent = NewMessageBox.Content
+
+		local Buttons = NewMessageBox.Buttons
+
+		local MessageBoxUI = script.MessageBoxUI:Clone()
+
+		-- Property changes
+		local Box = MessageBoxUI.Screen.Box
+
+		Box.Title.TitleText.Text = MessageBoxTitle
+		Box.Content.Text = MessageBoxContent
+
+		-- Render buttons
+		if Buttons ~= nil then
+			for button: MessageBoxButton in Buttons do
+				local AssignedButton = script.Button:Clone()
+				repeat wait(0.01) until AssignedButton ~= nil
+				
+				local result, err = pcall(function()
+					AssignedButton.Text = button.Label
+					AssignedButton.MouseButton1Click = button.Callback;
+
+					AssignedButton.Parent = Box.Buttons
+				end)
+				
+				if err then
+					warn("Exception occured while creating buttons: " .. err)
+				end
+			end
+		else
+			warn("message box shown with no buttons, make sure you hide the message box")
+		end
 		
-		AssignedButton.Parent = Box.Buttons
+		MessageBoxUI.Parent = toPlayer.PlayerGui
+	end
+
+	function NewMessageBox:Hide(): nil
+		if NewMessageBox.UI then
+			NewMessageBox.UI:Destroy()
+		end
 	end
 	
-	MessageBoxUI.Parent = toPlayer.PlayerGui
+	return NewMessageBox
 end
 
-function MessageBox.Hide(self)
-	if self.UI then
-		self.UI:Destroy()
-	end
-end
-
-return MessageBox
+return MessageBoxManager
